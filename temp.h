@@ -1,7 +1,6 @@
 #pragma once
 
-void pauseAndExit();
-
-bool safeInput(int& number, const std::string& Error);
-
 void printShieldWithTitle();
+void setup_windows_console();
+int menu_choice(int min, int max);
+void clear_cin();
