@@ -6,9 +6,8 @@
 #include "hill.h"
 
 namespace {
-    // Размер матрицы и модуль для операций
-    const int N = 5; // Теперь обрабатывается 3 байта за раз. Ключ: 9 целых чисел (матрица 3×3). Эффективное криптопространство: около 2⁷² возможных ключей (по формуле из литературы) Меньше — менее стойко, больше — сложнее найти обратимую матрицу (и дольше работает).
-    const int MOD = 256;  // Мы работаем с байтами, а каждый байт — это число от 0 до 255 → Всего 256 значений → Чтобы остаться в этом диапазоне, мы считаем все операции по модулю 256.
+    const int N = 5; 
+    const int MOD = 256;
 
     std::vector<std::vector<int>> parse_key(const std::string &key) {
         std::vector<std::vector<int>> matrix(N, std::vector<int>(N));
@@ -16,7 +15,7 @@ namespace {
         for (int i = 0; i < N * N; ++i) {
             int val;
             if (!(stream >> val)) {
-                std::cerr << "Ошибка: ключ должен содержать 9 целых чисел" << std::endl;
+                std::cerr << "Ошибка: ключ должен содержать 25 целых чисел" << std::endl;
                 return {};
             }
             matrix[i / N][i % N] = val % MOD;
@@ -38,8 +37,34 @@ namespace {
         return (x1 + m0) % m0;
     }
 
+    int determinant(const std::vector<std::vector<int>>& mat, int n) {
+        if (n == 1) return mat[0][0];
+        if (n == 2) return (mat[0][0]*mat[1][1] - mat[0][1]*mat[1][0]) % MOD;
+
+        int det = 0;
+        for (int p = 0; p < n; ++p) {
+            std::vector<std::vector<int>> sub(n-1, std::vector<int>(n-1));
+            for (int i = 1; i < n; ++i) {
+                int colIdx = 0;
+                for (int j = 0; j < n; ++j) {
+                    if (j == p) continue;
+                    sub[i-1][colIdx++] = mat[i][j];
+                }
+            }
+            int cofactor = ((p % 2 == 0 ? 1 : -1) * mat[0][p] * determinant(sub, n - 1)) % MOD;
+            det = (det + cofactor + MOD) % MOD;
+        }
+        return det;
+    }
+
     std::vector<std::vector<int>> inverse_matrix(const std::vector<std::vector<int>>& mat) {
         int n = N;
+        int det = determinant(mat, n);
+        if (std::gcd(det, MOD) != 1) {
+            std::cerr << "Ошибка: определитель не взаимно прост с " << MOD << std::endl;
+            return {};
+        }
+
         std::vector<std::vector<int>> a = mat;
         std::vector<std::vector<int>> inv(n, std::vector<int>(n, 0));
         for (int i = 0; i < n; ++i) inv[i][i] = 1;
